@@ -2,8 +2,9 @@
 
 **Dependencies:**
 
-Alpine 3.10 (lastest), https://hub.docker.com/_/alpine
-C++ 17 or higher
+* Alpine 3.10 (lastest), `https://hub.docker.com/_/alpine`
+* C++ 17 or higher
+
 
 
 **Build command**
