@@ -1,6 +1,7 @@
 # opendlv-logic-pathfollower-kiwi microservice
 
-Dependencies:
+**Dependencies:**
+
 Alpine 3.10 (lastest), https://hub.docker.com/_/alpine
 C++ 17 or higher
 
