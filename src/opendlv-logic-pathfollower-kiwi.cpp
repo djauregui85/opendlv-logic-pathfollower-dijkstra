@@ -21,7 +21,9 @@
 
 #include <fstream>
 #include <vector>
+
 #include "stringtoolbox.hpp"
+#include "line.hpp"
 
 int32_t main(int32_t argc, char **argv) {
   int32_t retCode{0};
@@ -45,10 +47,10 @@ int32_t main(int32_t argc, char **argv) {
     float const FREQ = std::stof(commandlineArguments["freq"]);
     double const DT = 1.0 / FREQ;
 
-    Behavior behavior;
+    //Behavior behavior;
 
-    // Create grid //
-    // ADD CODE HERE, MODIFY THIS CODE
+    // Create walls, depends of line library, vector, stringtoolbox
+    // Reads map-file
     std::vector<Line> walls;
     std::ifstream input(commandlineArguments["map-file"]);
     for (std::string str; getline(input, str);) {
@@ -67,47 +69,49 @@ int32_t main(int32_t argc, char **argv) {
       }
     }
 
-    // Maybe set to zero initial values because it is not get from the line
-    uint32_t const FRAME_ID{static_cast<uint32_t>(std::stoi(commandlineArguments["frame-id"]))};
-    double const X{static_cast<double>(std::stof(commandlineArguments["x"]))};
-    double const Y{static_cast<double>(std::stof(commandlineArguments["y"]))};
-    double const YAW{static_cast<double>(std::stof(commandlineArguments["yaw"]))};
+    std::cout << "ID: " << ID << ", CID: " << CID << ", FREQ: " << FREQ << ", DT: " << DT << std::endl;
+    std::cout << "aqui" << std::endl;
+    // // Maybe set to zero initial values because it is not get from the line
+    // uint32_t const FRAME_ID{static_cast<uint32_t>(std::stoi(commandlineArguments["frame-id"]))};
+    // double const X{static_cast<double>(std::stof(commandlineArguments["x"]))};
+    // double const Y{static_cast<double>(std::stof(commandlineArguments["y"]))};
+    // double const YAW{static_cast<double>(std::stof(commandlineArguments["yaw"]))};
 
-    Sensor sensor{walls, X, Y, YAW};
+    // Sensor sensor{walls, X, Y, YAW};
+    // auto onFrame{[&FRAME_ID, &sensor](cluon::data::Envelope &&envelope)
+    // auto onFrame{[&FRAME_ID](cluon::data::Envelope &&envelope) 
+    //   {
+    //     uint32_t const senderStamp = envelope.senderStamp();
+    //     if (FRAME_ID == senderStamp) {
+    //       auto frame = cluon::extractMessage<opendlv::sim::Frame>(std::move(envelope));
+    //       // sensor.setFrame(frame);
+    //     }
+    //   }};
 
-    auto onFrame{[&FRAME_ID, &sensor](cluon::data::Envelope &&envelope)
-      {
-        uint32_t const senderStamp = envelope.senderStamp();
-        if (FRAME_ID == senderStamp) {
-          auto frame = cluon::extractMessage<opendlv::sim::Frame>(std::move(envelope));
-          sensor.setFrame(frame);
-        }
-      }};
+    // cluon::OD4Session od4{CID};
+    // od4.dataTrigger(opendlv::sim::Frame::ID(), onFrame);
+    // od4.dataTrigger(opendlv::proxy::DistanceReading::ID(), onDistanceReading);
+    // od4.dataTrigger(opendlv::proxy::VoltageReading::ID(), onVoltageReading);
 
-    cluon::OD4Session od4{CID};
-    od4.dataTrigger(opendlv::sim::Frame::ID(), onFrame);
-    od4.dataTrigger(opendlv::proxy::DistanceReading::ID(), onDistanceReading);
-    od4.dataTrigger(opendlv::proxy::VoltageReading::ID(), onVoltageReading);
+    // USE FOR THE OUTPUT TO SEND THE BEHAIVOR, OUTPUT OF "CONTROLLER PID" IN MY BLOCK DIAGRAM
+    // auto atFrequency{[&VERBOSE, &behavior, &od4]() -> bool
+    //   {
+    //     behavior.step();
+    //     auto groundSteeringAngleRequest = behavior.getGroundSteeringAngle();
+    //     auto pedalPositionRequest = behavior.getPedalPositionRequest();
 
-    // Each step, follow the pad
-    auto atFrequency{[&VERBOSE, &behavior, &od4]() -> bool
-      {
-        behavior.step();
-        auto groundSteeringAngleRequest = behavior.getGroundSteeringAngle();
-        auto pedalPositionRequest = behavior.getPedalPositionRequest();
+    //     cluon::data::TimeStamp sampleTime;
+    //     od4.send(groundSteeringAngleRequest, sampleTime, 0);
+    //     od4.send(pedalPositionRequest, sampleTime, 0);
+    //     if (VERBOSE) {
+    //       std::cout << "Ground steering angle is " << groundSteeringAngleRequest.groundSteering()
+    //         << " and pedal position is " << pedalPositionRequest.position() << std::endl;
+    //     }
 
-        cluon::data::TimeStamp sampleTime;
-        od4.send(groundSteeringAngleRequest, sampleTime, 0);
-        od4.send(pedalPositionRequest, sampleTime, 0);
-        if (VERBOSE) {
-          std::cout << "Ground steering angle is " << groundSteeringAngleRequest.groundSteering()
-            << " and pedal position is " << pedalPositionRequest.position() << std::endl;
-        }
+    //     return true;
+    //   }};
 
-        return true;
-      }};
-
-    od4.timeTrigger(FREQ, atFrequency);
+    // od4.timeTrigger(FREQ, atFrequency);
   }
   return retCode;
 }
