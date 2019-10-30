@@ -19,6 +19,7 @@
 #include "opendlv-standard-message-set.hpp"
 #include "behavior.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <vector>
 
@@ -35,10 +36,11 @@ int32_t main(int32_t argc, char **argv) {
       || 0 == commandlineArguments.count("start-x") 
       || 0 == commandlineArguments.count("start-y")
       || 0 == commandlineArguments.count("end-x") 
-      || 0 == commandlineArguments.count("end-y")) {
+      || 0 == commandlineArguments.count("end-y")
+      || 0 == commandlineArguments.count("verbose")) {
     std::cerr << argv[0] << " Microservice for path planning and path following for Kiwi." << std::endl;
     std::cerr << "Usage:   " << argv[0] << " --frame-id=<The frame to use for position> --freq=<Simulation frequency> --map-file=<File where walls of the squard grid arena (without any diagonal walls as stated below) are defined as rows according to x1,y1,x2,y2;> --start-x=<X coordinate of the start position> --start-y=<Ycoordinate of the start position> --end-x=<X coordinate of the end (goal) position> --end-y=<Y coordinate of the end (goal) position> --cid=<OpenDaVINCI session> [--id=<ID if more than one sensor>] [--verbose]" << std::endl;
-    std::cerr << "Example: " << argv[0] << " --cid=111 --freq=10 --frame-id=0 --map-file=/opt/simulation-map.txt --start-x=0.0 --start-y=0.0 --end-x=1.0 --end-y=1.0" << std::endl;
+    std::cerr << "Example: " << argv[0] << " --verbose --cid=111 --freq=10 --frame-id=0 --map-file=/opt/simulation-map.txt --start-x=0.0 --start-y=0.0 --end-x=1.0 --end-y=1.0" << std::endl;
     retCode = 1;
   } else {
     uint32_t const ID{(commandlineArguments["id"].size() != 0) ? static_cast<uint32_t>(std::stoi(commandlineArguments["id"])) : 0};
@@ -51,6 +53,7 @@ int32_t main(int32_t argc, char **argv) {
 
     // Create walls, depends of line library, vector, stringtoolbox
     // Reads map-file
+
     std::vector<Line> walls;
     std::ifstream input(commandlineArguments["map-file"]);
     for (std::string str; getline(input, str);) {
@@ -71,6 +74,31 @@ int32_t main(int32_t argc, char **argv) {
 
     std::cout << "ID: " << ID << ", CID: " << CID << ", FREQ: " << FREQ << ", DT: " << DT << std::endl;
     std::cout << "aqui" << std::endl;
+
+
+    std::vector<double> ox;
+    std::vector<double> oy;
+    for(Line wall : walls) {
+      ox.push_back(wall.x1());
+      ox.push_back(wall.x2());
+      oy.push_back(wall.y1());
+      oy.push_back(wall.y2());     
+    }
+    std::cout << "\nX values\n" << std::endl;
+    for(double n : ox) {
+      std::cout << n << "," << std::endl;
+    }
+    std::cout << "\nY values\n" << std::endl;
+    for(double m : oy) {
+      std::cout << m << "," << std::endl;
+    }
+    
+    const auto [xmin, xmax] = std::minmax_element(ox.begin(), ox.end());
+    // std::cout << "xmin = " << xminmax.first << ", xmax = " << xminmax.second << '\n';
+    const auto [ymin, ymax] = std::minmax_element(oy.begin(), oy.end());
+    // std::cout << "xmin = " << yminmax.first << ", xmax = " << yminmax.second << '\n';
+
+
     // // Maybe set to zero initial values because it is not get from the line
     // uint32_t const FRAME_ID{static_cast<uint32_t>(std::stoi(commandlineArguments["frame-id"]))};
     // double const X{static_cast<double>(std::stof(commandlineArguments["x"]))};
