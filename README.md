@@ -1,5 +1,11 @@
 # opendlv-logic-pathfollower-kiwi microservice
 
+**Dependencies:**
+
+Alpine 3.10 (lastest), https://hub.docker.com/_/alpine
+C++ 17 or higher
+
+
 Input: simulation-map.txt
 
 The map must be in a directory /opt in the root of the microservice folder.
