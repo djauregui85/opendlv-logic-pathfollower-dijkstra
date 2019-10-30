@@ -1,6 +1,7 @@
 # opendlv-logic-pathfollower-kiwi microservice
 
 Input: simulation-map.txt
+
 The map must be in a directory /opt in the root of the microservice folder.
 
 **Build command**
