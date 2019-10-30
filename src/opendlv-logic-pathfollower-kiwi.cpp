@@ -92,11 +92,12 @@ int32_t main(int32_t argc, char **argv) {
     for(double m : oy) {
       std::cout << m << "," << std::endl;
     }
-    
+
+    // Check this with software guys: code use c++17 instead of 14, requires change makefile and docker alpine to 3.10 instead 3.7
     const auto [xmin, xmax] = std::minmax_element(ox.begin(), ox.end());
-    // std::cout << "xmin = " << xminmax.first << ", xmax = " << xminmax.second << '\n';
+    std::cout << "xmin = " << *xmin << ", xmax = " << *xmax << '\n';
     const auto [ymin, ymax] = std::minmax_element(oy.begin(), oy.end());
-    // std::cout << "xmin = " << yminmax.first << ", xmax = " << yminmax.second << '\n';
+    std::cout << "xmin = " << *ymin << ", xmax = " << *ymax << '\n';
 
 
     // // Maybe set to zero initial values because it is not get from the line

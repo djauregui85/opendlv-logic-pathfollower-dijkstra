@@ -24,7 +24,7 @@ set(CLUON_COMPLETE cluon-complete-v0.0.121.hpp)
 
 ################################################################################
 # This project requires C++14 or newer.
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17) #14
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 # Strip unneeded symbols from binaries.
