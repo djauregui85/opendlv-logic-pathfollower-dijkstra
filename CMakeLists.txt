@@ -51,6 +51,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 # Threads are necessary for linking the resulting binaries as UDPReceiver is running in parallel.
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+# # Modified by Diego
+# # add this to the cmake path-to-example-directory -DEigen3_DIR=$HOME/mypackages/share/eigen3/cmake/
+# # Use eigen
+# find_package(Eigen3 3.3 NO_MODULE)
+# if (TARGET Eigen3::Eigen)
+#     set(USE_EIGEN Eigen3::Eigen)
+# endif (TARGET Eigen3::Eigen)
+
 
 ################################################################################
 # Extract cluon-msc from cluon-complete.hpp.
@@ -69,11 +79,12 @@ add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/${OPENDLV_STANDARD_MESSAGE_SET} ${CMAKE_BINARY_DIR}/cluon-msc)
 # Add current build directory as include directory as it contains generated files.
 include_directories(SYSTEM ${CMAKE_BINARY_DIR})
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 ################################################################################
 # Gather all object code first to avoid double compilation.
-add_library(${PROJECT_NAME}-core OBJECT  ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp ${CMAKE_CURRENT_SOURCE_DIR}/src/behavior.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/line.cpp)
+add_library(${PROJECT_NAME}-core OBJECT  ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp ${CMAKE_CURRENT_SOURCE_DIR}/src/behavior.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/line.cpp) # ${USE_EIGEN}) # Modified by Diego
 set(LIBRARIES Threads::Threads)
 
 ################################################################################

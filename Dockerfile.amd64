@@ -19,7 +19,10 @@ RUN apk update && \
     cmake \
     g++ \
     make \
-    upx 
+    upx \
+    mercurial
+
+RUN hg clone https://bitbucket.org/eigen/eigen && cd eigen && mkdir build && cd build && cmake .. && make -j4 install   
 
 ADD . /opt/sources
 WORKDIR /opt/sources
