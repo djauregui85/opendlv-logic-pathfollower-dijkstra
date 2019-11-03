@@ -40,17 +40,44 @@ struct node_t {
   int pind;
 };
 
-
-
-
-
 double calc_position(double, int, double);
 double calc_position(double, int, double);
 int calc_xyindex(double, double, double);
 int calc_index(node_t, std::pair<double, double>, int);
-bool verify_node(node_t, double, std::pair<double, double> *, std::pair<double, double> *, bool **);
+bool verify_node(node_t, double, std::pair<double, double>, std::pair<double, double>, bool);
 void displayNode(node_t);
+bool comp_node_cost(std::pair<int, node_t>, std::pair<int, node_t>); 
+double get_motion_model(void);
+std::vector<std::pair<double,double>> calc_final_path(node_t, std::map<int, node_t>, std::pair<double,double>, double);
 
+// dx, dy, cost
+double motion[8][3] = { 
+                        { 1,  0,            1},
+                        { 0,  1,            1},
+                        {-1,  0,            1},
+                        { 0, -1,            1},
+                        {-1, -1, std::sqrt(2)},
+                        {-1,  1, std::sqrt(2)},
+                        { 1, -1, std::sqrt(2)},
+                        { 1,  1, std::sqrt(2)}
+                      };
+
+std::vector<std::pair<double,double>> calc_final_path(node_t ngoal, std::map<int, node_t> visited, std::pair<double,double> min, double grid_size) {
+  // generate final course
+  std::vector< std::pair <double, double> > route;
+  route.push_back(std::make_pair(calc_position(grid_size, ngoal.x, min.first),calc_position(grid_size, ngoal.y, min.second)));
+  int pind = ngoal.pind;
+  while (pind != -1) {
+      node_t n = visited[pind];
+      route.push_back(std::make_pair(calc_position(grid_size, n.x, min.first),calc_position(grid_size, n.y, min.second)));
+      pind = n.pind;
+  }
+  return route;
+} 
+
+bool comp_node_cost(std::pair<int, node_t> a, std::pair<int, node_t> b) { 
+  return (a.second.cost < b.second.cost); 
+} 
 
 // Function definition
 double calc_position(double grid_size, int index, double minp) {
@@ -66,17 +93,17 @@ int calc_index(node_t node, std::pair<double, double> min, int width) {
     return (int) round((node.y - min.second) * width + (node.x - min.first));
 }
 
-bool verify_node(node_t n, double grid_size, std::pair<double, double> *min, std::pair<double, double> *max, bool **grid) {
-  const double px = calc_position(grid_size, n.x, min->first);
-  const double py = calc_position(grid_size, n.y, min->second);
+bool verify_node(node_t n, double grid_size, std::pair<double, double> min, std::pair<double, double> max, bool **grid) {
+  const double px = calc_position(grid_size, n.x, min.first);
+  const double py = calc_position(grid_size, n.y, min.second);
 
-  if (px < min->first) { 
+  if (px < min.first) { 
     return false;
-  } else if (py < min->second) {
+  } else if (py < min.second) {
       return false;
-  } else if (px >= max->first) {
+  } else if (px >= max.first) {
       return false;
-  } else if (py >= max->second) {
+  } else if (py >= max.second) {
       return false;
   }    
 
@@ -145,7 +172,7 @@ int32_t main(int32_t argc, char **argv) {
 
     // Generate a vector with all the walls/obstacules chopped at the size of the grid
     const double tol{0.0001}; // Tolerance for comparing floats/doubles
-    const double grid_size{0.25}; //asuming square
+    const double grid_size{0.1}; //asuming square
     int xwidth{0}; // change in every iteration but if the arena is square is ok
     int ywidth{0};
     double y{0.0};
@@ -196,7 +223,7 @@ int32_t main(int32_t argc, char **argv) {
       } 
     }
     // Assign true to the cells that are not obstacules
-    double robot_radius{0.2};
+    double robot_radius{0.05};
     double d{0.0};    
     for (int ix = 0; ix < grid_w; ix++) {
       x = calc_position(grid_size, ix, (*min).first);
@@ -234,6 +261,64 @@ int32_t main(int32_t argc, char **argv) {
       std::cout << "\t" << itr->first << "\t"; 
       displayNode(itr->second);  
     }
+
+    
+
+    while(true) {
+
+      std::pair<int, node_t> min_cost_node = *std::min_element(unvisited.begin(), unvisited.end(), &comp_node_cost);
+      int c_id = min_cost_node.first;
+      std::cout << c_id << std::endl;
+      node_t current = unvisited[c_id];
+      displayNode(current); 
+
+      // Exit the loop if found the goal
+      if ((current.x == ngoal.x) && (current.y == ngoal.y)) {
+          std::cout << "Find goal" << std::endl;
+          ngoal.pind = current.pind;
+          ngoal.cost = current.cost;
+          break;
+      }
+
+      // Remove the item from the unvisited map
+      unvisited.erase(c_id);
+
+      // Add it to the visited map
+      visited.insert(std::pair<int, node_t> (c_id, current));
+
+      int num_mov =  sizeof(motion) / sizeof(motion[0]); 
+      if (VERBOSE)
+        std::cout << "Number of movements of motion model: " << num_mov << std::endl;
+
+      // expand search grid based on motion model
+      for(int i = 0; i < num_mov; ++i) {
+        node_t node = { current.x + (int) motion[i][0],
+                          current.y + (int) motion[i][1],
+                          current.cost + motion[i][2], c_id };
+        int n_id = calc_index(node, *min, grid_w);
+
+        if (visited.count(n_id))  // use binary search node.
+          continue;
+
+        if (!verify_node(node, grid_size, *min, *max, grid))
+          continue;
+
+        if (!unvisited.count(n_id)) {
+          unvisited.insert(std::pair<int, node_t> (n_id, node)); // Discover a new node in the next iteration
+        } else if (unvisited[n_id].cost >= node.cost) {
+            //This path is the best until now. record it!
+            unvisited.erase(n_id);
+            unvisited.insert(std::pair<int, node_t> (n_id, node)); 
+        }
+      }
+    }
+    std::vector<std::pair<double,double>> path = calc_final_path(ngoal, visited, *min, grid_size);
+    std::cout << "(X,Y)" << std::endl;
+    for(std::pair n : path) {
+      std::cout << "(" << n.first << "," << n.second << ")" << std::endl;
+    }    
+    // }
+
 
     // // Maybe set to zero initial values because it is not get from the line
     // uint32_t const FRAME_ID{static_cast<uint32_t>(std::stoi(commandlineArguments["frame-id"]))};
