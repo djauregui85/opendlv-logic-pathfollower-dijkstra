@@ -23,15 +23,71 @@
 #include <fstream>
 #include <vector>
 #include <math.h>
+#include <iterator> 
+#include <map> 
 
 #include "stringtoolbox.hpp"
 #include "line.hpp"
 #include "dijkstra.hpp"
 
 
+
+// Create structure for node 
+struct node_t {
+  int x;
+  int y;
+  double cost;
+  int pind;
+};
+
+
+
+
+
+double calc_position(double, int, double);
+double calc_position(double, int, double);
+int calc_xyindex(double, double, double);
+int calc_index(node_t, std::pair<double, double>, int);
+bool verify_node(node_t, double, std::pair<double, double> *, std::pair<double, double> *, bool **);
+void displayNode(node_t);
+
+
 // Function definition
 double calc_position(double grid_size, int index, double minp) {
     return (double) index*grid_size + minp;
+}
+
+int calc_xyindex(double position, double minp, double grid_size) {
+    return (int) round((position - minp)/grid_size);
+}
+
+// Index in map
+int calc_index(node_t node, std::pair<double, double> min, int width) {
+    return (int) round((node.y - min.second) * width + (node.x - min.first));
+}
+
+bool verify_node(node_t n, double grid_size, std::pair<double, double> *min, std::pair<double, double> *max, bool **grid) {
+  const double px = calc_position(grid_size, n.x, min->first);
+  const double py = calc_position(grid_size, n.y, min->second);
+
+  if (px < min->first) { 
+    return false;
+  } else if (py < min->second) {
+      return false;
+  } else if (px >= max->first) {
+      return false;
+  } else if (py >= max->second) {
+      return false;
+  }    
+
+  if (grid[n.x][n.y])
+      return false;
+
+  return true;
+}
+
+void displayNode(node_t n) {
+    std::cout << "Node(" << n.x << "," << n.y << "," << n.cost << "," << n.pind << ")" << std::endl;
 }
 
 int32_t main(int32_t argc, char **argv) {
@@ -55,7 +111,12 @@ int32_t main(int32_t argc, char **argv) {
     bool const VERBOSE{commandlineArguments.count("verbose") != 0};
     uint16_t const CID = std::stoi(commandlineArguments["cid"]);
     float const FREQ = std::stof(commandlineArguments["freq"]);
-    double const DT = 1.0 / FREQ;
+    float const DT = 1/FREQ;
+    double const sx = std::stoi(commandlineArguments["start-x"]);
+    double const sy = std::stoi(commandlineArguments["start-y"]);
+    double const gx = std::stoi(commandlineArguments["end-x"]);
+    double const gy = std::stoi(commandlineArguments["end-x"]);        
+
     if (VERBOSE) {
       std::cout << "ID: " << ID << ", CID: " << CID << ", FREQ: " << FREQ << ", DT: " << DT << std::endl;
     }
@@ -123,10 +184,10 @@ int32_t main(int32_t argc, char **argv) {
     }
     // Obstacle map generation *************************
     // Create and initializate the grid matrix
-    double **grid;
-    grid = new double*[grid_w];
+    bool **grid;
+    grid = new bool*[grid_w];
     for (int i = 0; i < grid_w; ++i) {
-      grid[i] = new double[grid_h];
+      grid[i] = new bool[grid_h];
     }
     // Initializate the grid matrix with False
     for (int i = 0; i < grid_w; ++i) {
@@ -151,9 +212,28 @@ int32_t main(int32_t argc, char **argv) {
       }
     }
 
-    // Function to calculate positon in the grid
-  
 
+
+    // Create maps for openset and closeset
+    std::map<int, node_t> unvisited, visited;
+
+    node_t nstart, ngoal;
+    nstart = {calc_xyindex(sx, min->first, grid_size), calc_xyindex(sy, min->second, grid_size), 0.0, -1};
+    ngoal = {calc_xyindex(gx, min->first, grid_size), calc_xyindex(gy, min->second, grid_size), 0.0, -1};
+    displayNode(nstart);
+    displayNode(ngoal);
+
+    unvisited.insert(std::pair<int, node_t> (calc_index(nstart, *min, grid_w), nstart)); // first element of the unvisited is the start node
+    // Function to calculate positon in the grid,
+  
+    // printing map
+    std::map<int, node_t>::iterator itr; 
+    std::cout << "\nThe map is: \n" << std::endl; 
+    std::cout << "\tKEY\tELEMENT\n" << std::endl;
+    for (itr = unvisited.begin(); itr != unvisited.end(); ++itr) { 
+      std::cout << "\t" << itr->first << "\t"; 
+      displayNode(itr->second);  
+    }
 
     // // Maybe set to zero initial values because it is not get from the line
     // uint32_t const FRAME_ID{static_cast<uint32_t>(std::stoi(commandlineArguments["frame-id"]))};
