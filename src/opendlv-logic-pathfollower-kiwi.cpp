@@ -139,19 +139,19 @@ int32_t main(int32_t argc, char **argv) {
     uint16_t const CID = std::stoi(commandlineArguments["cid"]);
     float const FREQ = std::stof(commandlineArguments["freq"]);
     float const DT = 1/FREQ;
-    double const sx = std::stoi(commandlineArguments["start-x"]);
-    double const sy = std::stoi(commandlineArguments["start-y"]);
-    double const gx = std::stoi(commandlineArguments["end-x"]);
-    double const gy = std::stoi(commandlineArguments["end-x"]);        
+    double const sx = std::stod(commandlineArguments["start-x"]);
+    double const sy = std::stod(commandlineArguments["start-y"]);
+    double const gx = std::stod(commandlineArguments["end-x"]);
+    double const gy = std::stod(commandlineArguments["end-y"]);        
 
     if (VERBOSE) {
       std::cout << "ID: " << ID << ", CID: " << CID << ", FREQ: " << FREQ << ", DT: " << DT << std::endl;
+      std::cout << "start-x: " << sx << ", start-y: " << sy << ", end-x: " << gx << ", end-y: " << gy << std::endl;
     }
     //Behavior behavior;
 
     // Create walls, depends of line library, vector, stringtoolbox
     // Reads map-file
-
     std::vector<Line> walls;
     std::ifstream input(commandlineArguments["map-file"]);
     for (std::string str; getline(input, str);) {
@@ -172,39 +172,67 @@ int32_t main(int32_t argc, char **argv) {
 
     // Generate a vector with all the walls/obstacules chopped at the size of the grid
     const double tol{0.0001}; // Tolerance for comparing floats/doubles
-    const double grid_size{0.1}; //asuming square
-    int xwidth{0}; // change in every iteration but if the arena is square is ok
-    int ywidth{0};
+    const double grid_size{0.25}; //asuming square
+    // int xwidth{0}; // change in every iteration but if the arena is square is ok
+    // int ywidth{0};
     double y{0.0};
     double x{0.0};
     // The arena must be square or rectangular, this should be in a separte file where it could be updated without interfierence
     std::vector< std::pair <double, double> > obmap;
     for(Line wall : walls) {
+      int xwidth{0}; // change in every iteration but if the arena is square is ok
+      int ywidth{0};
+      std::cout << "Current wall [" << wall.x1() << "," << wall.y1() << "] to [" << wall.x2() << "," << wall.y2() << "]" << fabs(wall.x2() - wall.x1()) << fabs(wall.y2() - wall.y1()) << std::endl;
       if (fabs(wall.x2() - wall.x1()) <= tol) {
+        std::cout << "here1" << std::endl;
         ywidth = (int) round((wall.y2() - wall.y1()) / grid_size);
-        for (int iy = 0; iy <= ywidth; iy++) {
-          y = calc_position(grid_size, iy, wall.y1());
-          obmap.push_back(std::make_pair(wall.x2(), y));
+        std::cout << ywidth << std::endl;
+        if (ywidth >= 0) {
+          for (int iy = 0; iy <= ywidth; iy++) {
+            y = calc_position(grid_size, iy, wall.y1());
+            obmap.push_back(std::make_pair(wall.x2(), y));
+            std::cout << "Current wall (" << wall.x2() << "," << y << ")" << std::endl;
+          }
+        } else {
+          for (int iy = ywidth; iy <= 0; iy++) {
+            y = calc_position(grid_size, iy, wall.y1());
+            obmap.push_back(std::make_pair(wall.x2(), y));
+            std::cout << "Current wall (" << wall.x2() << "," << y << ")" << std::endl;
+          }
         }
       } else if (fabs(wall.y2() - wall.y1()) <= tol) {
+        std::cout << "here2" << std::endl;
         xwidth = (int) round((wall.x2() - wall.x1()) / grid_size);
-        for (int ix = 0; ix <= xwidth; ix++) {
-          x = calc_position(grid_size, ix, wall.x1());
-          obmap.push_back(std::make_pair(x, wall.y2()));
+        std::cout << xwidth << std::endl;
+        if (xwidth >= 0) {        
+          for (int ix = 0; ix <= xwidth; ix++) {
+            x = calc_position(grid_size, ix, wall.x1());
+            obmap.push_back(std::make_pair(x, wall.y2()));
+            std::cout << "Current wall (" << x << "," << wall.y2() << ")" << std::endl;
+          }
+        } else {
+            for (int ix = xwidth; ix <= 0; ix++) {
+              x = calc_position(grid_size, ix, wall.x1());
+              obmap.push_back(std::make_pair(x, wall.y2()));
+              std::cout << "Current wall (" << x << "," << wall.y2() << ")" << std::endl;          
+            }
         }
-      }    
+      } else {
+          std::cout << "here3" << std::endl;
+      } 
     }
     // Check this with software guys: code use c++17 instead of 14, requires change makefile and docker alpine to 3.10 instead 3.7
     const auto [min, max] = std::minmax_element(obmap.begin(), obmap.end());
-    const int grid_w = abs(xwidth);
-    const int grid_h = abs(ywidth);
+    const int grid_w = (int) round((max->first - min->first) / grid_size);
+    const int grid_h = (int) round((max->second - min->second) / grid_size);
+    // const int grid_w = abs(xwidth);
+    // const int grid_h = abs(ywidth);
 
     if (VERBOSE) {
       std::cout << "(X,Y)" << std::endl;
       for(std::pair n : obmap) {
         std::cout << "(" << n.first << "," << n.second << ")" << std::endl;
       }
-      std::cout << "xwidth = " << xwidth << ", ywidth = " << ywidth << '\n' << std::endl;
       std::cout << "grid_w = " << grid_w << ", grid_h = " << grid_h << '\n' << std::endl;  
       std::cout << "xmin = " << (*min).first << ", xmax = " << (*max).first << '\n' << std::endl;
       std::cout << "ymin = " << (*min).second << ", ymax = " << (*max).second << '\n' << std::endl;      
@@ -363,7 +391,7 @@ int32_t main(int32_t argc, char **argv) {
     // od4.timeTrigger(FREQ, atFrequency);
 
     // Eliminate the array to avoid memory leak
-    for (int ix = 0; ix < xwidth; ++ix) {
+    for (int ix = 0; ix < grid_w; ++ix) {
       delete [] grid[ix];
     }
     delete [] grid;
