@@ -17,7 +17,7 @@
 
 #include "cluon-complete.hpp"
 #include "opendlv-standard-message-set.hpp"
-#include "behavior.hpp"
+// #include "behavior.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -25,10 +25,11 @@
 #include <math.h>
 #include <iterator> 
 #include <map> 
+#include <string>
 
 #include "stringtoolbox.hpp"
 #include "line.hpp"
-#include "dijkstra.hpp"
+// #include "dijkstra.hpp"
 
 
 
@@ -46,6 +47,7 @@ int calc_xyindex(double, double, double);
 int calc_index(node_t, std::pair<double, double>, int);
 bool verify_node(node_t, double, std::pair<double, double>, std::pair<double, double>, bool);
 void displayNode(node_t);
+void displayMap(std::map<int, node_t>, std::string);
 bool comp_node_cost(std::pair<int, node_t>, std::pair<int, node_t>); 
 double get_motion_model(void);
 std::vector<std::pair<double,double>> calc_final_path(node_t, std::map<int, node_t>, std::pair<double,double>, double);
@@ -56,10 +58,10 @@ double motion[8][3] = {
                         { 0,  1,            1},
                         {-1,  0,            1},
                         { 0, -1,            1},
-                        {-1, -1, std::sqrt(2)},
+                        { 1,  1, std::sqrt(2)},
                         {-1,  1, std::sqrt(2)},
                         { 1, -1, std::sqrt(2)},
-                        { 1,  1, std::sqrt(2)}
+                        {-1, -1, std::sqrt(2)}
                       };
 
 std::vector<std::pair<double,double>> calc_final_path(node_t ngoal, std::map<int, node_t> visited, std::pair<double,double> min, double grid_size) {
@@ -117,6 +119,18 @@ void displayNode(node_t n) {
     std::cout << "Node(" << n.x << "," << n.y << "," << n.cost << "," << n.pind << ")" << std::endl;
 }
 
+void displayMap(std::map<int, node_t> map, std::string mapname) {
+    // printing map
+    std::map<int, node_t>::iterator itr; 
+    std::cout << "\nThe map is: " << mapname <<  "\n" << std::endl; 
+    std::cout << "\tKEY\tELEMENT\n" << std::endl;
+    for (itr = map.begin(); itr != map.end(); ++itr) { 
+      std::cout << "\t" << itr->first << "\t"; 
+      displayNode(itr->second);  
+    }
+}
+
+
 int32_t main(int32_t argc, char **argv) {
   int32_t retCode{0};
   auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
@@ -148,7 +162,7 @@ int32_t main(int32_t argc, char **argv) {
       std::cout << "ID: " << ID << ", CID: " << CID << ", FREQ: " << FREQ << ", DT: " << DT << std::endl;
       std::cout << "start-x: " << sx << ", start-y: " << sy << ", end-x: " << gx << ", end-y: " << gy << std::endl;
     }
-    //Behavior behavior;
+
 
     // Create walls, depends of line library, vector, stringtoolbox
     // Reads map-file
@@ -225,8 +239,7 @@ int32_t main(int32_t argc, char **argv) {
     const auto [min, max] = std::minmax_element(obmap.begin(), obmap.end());
     const int grid_w = (int) round((max->first - min->first) / grid_size);
     const int grid_h = (int) round((max->second - min->second) / grid_size);
-    // const int grid_w = abs(xwidth);
-    // const int grid_h = abs(ywidth);
+
 
     if (VERBOSE) {
       std::cout << "(X,Y)" << std::endl;
@@ -251,11 +264,11 @@ int32_t main(int32_t argc, char **argv) {
       } 
     }
     // Assign true to the cells that are not obstacules
-    double robot_radius{0.05};
+    double robot_radius{0.30};
     double d{0.0};    
-    for (int ix = 0; ix < grid_w; ix++) {
+    for (int ix = 0; ix < grid_w; ++ix) {
       x = calc_position(grid_size, ix, (*min).first);
-      for (int iy = 0; iy < grid_h; iy++) {
+      for (int iy = 0; iy < grid_h; ++iy) {
         y = calc_position(grid_size, iy, (*min).second);
         for(std::pair n : obmap) {
           d = std::sqrt(std::pow(n.first - x , 2.0) + std::pow(n.second - y , 2.0));
@@ -280,27 +293,31 @@ int32_t main(int32_t argc, char **argv) {
 
     unvisited.insert(std::pair<int, node_t> (calc_index(nstart, *min, grid_w), nstart)); // first element of the unvisited is the start node
     // Function to calculate positon in the grid,
-  
-    // printing map
-    std::map<int, node_t>::iterator itr; 
-    std::cout << "\nThe map is: \n" << std::endl; 
-    std::cout << "\tKEY\tELEMENT\n" << std::endl;
-    for (itr = unvisited.begin(); itr != unvisited.end(); ++itr) { 
-      std::cout << "\t" << itr->first << "\t"; 
-      displayNode(itr->second);  
-    }
 
+    std::string v = "Visited";
+    std::string unv = "Unvisited";
+    
+    // printing map
+    displayMap(unvisited, unv); 
+    // std::map<int, node_t>::iterator itr;
+    // std::cout << "\nThe map is: \n" << std::endl; 
+    // std::cout << "\tKEY\tELEMENT\n" << std::endl;
+    // for (itr = unvisited.begin(); itr != unvisited.end(); ++itr) { 
+    //   std::cout << "\t" << itr->first << "\t"; 
+    //   displayNode(itr->second);  
+    // }
     
 
     while(true) {
-
+      displayMap(unvisited, unv);
+      // Search for the node with the smallest cost in the unvisited list and assign it as the current node
       std::pair<int, node_t> min_cost_node = *std::min_element(unvisited.begin(), unvisited.end(), &comp_node_cost);
       int c_id = min_cost_node.first;
       std::cout << c_id << std::endl;
       node_t current = unvisited[c_id];
       displayNode(current); 
 
-      // Exit the loop if found the goal
+      // Exit the loop if the current node is the goal
       if ((current.x == ngoal.x) && (current.y == ngoal.y)) {
           std::cout << "Find goal" << std::endl;
           ngoal.pind = current.pind;
@@ -313,82 +330,47 @@ int32_t main(int32_t argc, char **argv) {
 
       // Add it to the visited map
       visited.insert(std::pair<int, node_t> (c_id, current));
+      displayMap(visited, v); 
 
       int num_mov =  sizeof(motion) / sizeof(motion[0]); 
       if (VERBOSE)
-        std::cout << "Number of movements of motion model: " << num_mov << std::endl;
+
 
       // expand search grid based on motion model
       for(int i = 0; i < num_mov; ++i) {
         node_t node = { current.x + (int) motion[i][0],
                           current.y + (int) motion[i][1],
-                          current.cost + motion[i][2], c_id };
-        int n_id = calc_index(node, *min, grid_w);
+                          current.cost + motion[i][2], c_id }; // create a node for each possible movement using the id of the current node
+        int n_id = calc_index(node, *min, grid_w); // compute a new id for each node in the neighborhod of the current node
+        if (VERBOSE)
+          displayNode(node); 
 
-        if (visited.count(n_id))  // use binary search node.
+        if (visited.count(n_id))  // if the new node already was visit, skip to the next one
           continue;
 
-        if (!verify_node(node, grid_size, *min, *max, grid))
+        if (!verify_node(node, grid_size, *min, *max, grid)) // if the new node is part of the walls, internal obstacles including robot radius, skip to the next one
           continue;
 
-        if (!unvisited.count(n_id)) {
+        if (!unvisited.count(n_id)) { // if the node is not part of the unvisited list, add it with new id
           unvisited.insert(std::pair<int, node_t> (n_id, node)); // Discover a new node in the next iteration
-        } else if (unvisited[n_id].cost >= node.cost) {
+        } else if (unvisited[n_id].cost >= node.cost) { // if the node is in the unvisited list, check if the cost of the node been evaluate is smaller than 
             //This path is the best until now. record it!
+            std::cout << unvisited[n_id].cost << ">=" << node.cost << std::endl;
             unvisited.erase(n_id);
             unvisited.insert(std::pair<int, node_t> (n_id, node)); 
         }
       }
     }
+
     std::vector<std::pair<double,double>> path = calc_final_path(ngoal, visited, *min, grid_size);
     std::cout << "(X,Y)" << std::endl;
     for(std::pair n : path) {
       std::cout << "(" << n.first << "," << n.second << ")" << std::endl;
     }    
-    // }
-
-
-    // // Maybe set to zero initial values because it is not get from the line
-    // uint32_t const FRAME_ID{static_cast<uint32_t>(std::stoi(commandlineArguments["frame-id"]))};
-    // double const X{static_cast<double>(std::stof(commandlineArguments["x"]))};
-    // double const Y{static_cast<double>(std::stof(commandlineArguments["y"]))};
-    // double const YAW{static_cast<double>(std::stof(commandlineArguments["yaw"]))};
-
-    // Sensor sensor{walls, X, Y, YAW};
-    // auto onFrame{[&FRAME_ID, &sensor](cluon::data::Envelope &&envelope)
-    // auto onFrame{[&FRAME_ID](cluon::data::Envelope &&envelope) 
-    //   {
-    //     uint32_t const senderStamp = envelope.senderStamp();
-    //     if (FRAME_ID == senderStamp) {
-    //       auto frame = cluon::extractMessage<opendlv::sim::Frame>(std::move(envelope));
-    //       // sensor.setFrame(frame);
-    //     }
-    //   }};
-
-    // cluon::OD4Session od4{CID};
-    // od4.dataTrigger(opendlv::sim::Frame::ID(), onFrame);
-    // od4.dataTrigger(opendlv::proxy::DistanceReading::ID(), onDistanceReading);
-    // od4.dataTrigger(opendlv::proxy::VoltageReading::ID(), onVoltageReading);
-
-    // USE FOR THE OUTPUT TO SEND THE BEHAIVOR, OUTPUT OF "CONTROLLER PID" IN MY BLOCK DIAGRAM
-    // auto atFrequency{[&VERBOSE, &behavior, &od4]() -> bool
-    //   {
-    //     behavior.step();
-    //     auto groundSteeringAngleRequest = behavior.getGroundSteeringAngle();
-    //     auto pedalPositionRequest = behavior.getPedalPositionRequest();
-
-    //     cluon::data::TimeStamp sampleTime;
-    //     od4.send(groundSteeringAngleRequest, sampleTime, 0);
-    //     od4.send(pedalPositionRequest, sampleTime, 0);
-    //     if (VERBOSE) {
-    //       std::cout << "Ground steering angle is " << groundSteeringAngleRequest.groundSteering()
-    //         << " and pedal position is " << pedalPositionRequest.position() << std::endl;
-    //     }
-
-    //     return true;
-    //   }};
-
-    // od4.timeTrigger(FREQ, atFrequency);
+    
+    //*******************
+    //OD4 logic goes here
+    //*******************
 
     // Eliminate the array to avoid memory leak
     for (int ix = 0; ix < grid_w; ++ix) {
