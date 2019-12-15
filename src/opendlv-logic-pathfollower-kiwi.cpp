@@ -163,6 +163,8 @@ int32_t main(int32_t argc, char **argv) {
       std::cout << "start-x: " << sx << ", start-y: " << sy << ", end-x: " << gx << ", end-y: " << gy << std::endl;
     }
 
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // Read the map and create the grid. Mark walls and obstacles.
 
     // Create walls, depends of line library, vector, stringtoolbox
     // Reads map-file
@@ -198,7 +200,6 @@ int32_t main(int32_t argc, char **argv) {
       int ywidth{0};
       std::cout << "Current wall [" << wall.x1() << "," << wall.y1() << "] to [" << wall.x2() << "," << wall.y2() << "]" << fabs(wall.x2() - wall.x1()) << fabs(wall.y2() - wall.y1()) << std::endl;
       if (fabs(wall.x2() - wall.x1()) <= tol) {
-        std::cout << "here1" << std::endl;
         ywidth = (int) round((wall.y2() - wall.y1()) / grid_size);
         std::cout << ywidth << std::endl;
         if (ywidth >= 0) {
@@ -215,7 +216,6 @@ int32_t main(int32_t argc, char **argv) {
           }
         }
       } else if (fabs(wall.y2() - wall.y1()) <= tol) {
-        std::cout << "here2" << std::endl;
         xwidth = (int) round((wall.x2() - wall.x1()) / grid_size);
         std::cout << xwidth << std::endl;
         if (xwidth >= 0) {        
@@ -232,7 +232,7 @@ int32_t main(int32_t argc, char **argv) {
             }
         }
       } else {
-          std::cout << "here3" << std::endl;
+          std::cout << "Wrong grid" << std::endl;
       } 
     }
     // Check this with software guys: code use c++17 instead of 14, requires change makefile and docker alpine to 3.10 instead 3.7
@@ -279,7 +279,7 @@ int32_t main(int32_t argc, char **argv) {
         }
       }
     }
-
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
     // Create maps for openset and closeset
@@ -297,16 +297,8 @@ int32_t main(int32_t argc, char **argv) {
     std::string v = "Visited";
     std::string unv = "Unvisited";
     
-    // printing map
-    displayMap(unvisited, unv); 
-    // std::map<int, node_t>::iterator itr;
-    // std::cout << "\nThe map is: \n" << std::endl; 
-    // std::cout << "\tKEY\tELEMENT\n" << std::endl;
-    // for (itr = unvisited.begin(); itr != unvisited.end(); ++itr) { 
-    //   std::cout << "\t" << itr->first << "\t"; 
-    //   displayNode(itr->second);  
-    // }
-    
+    displayMap(unvisited, unv); // printing map 
+   
 
     while(true) {
       displayMap(unvisited, unv);
@@ -336,7 +328,7 @@ int32_t main(int32_t argc, char **argv) {
       if (VERBOSE)
 
 
-      // expand search grid based on motion model
+      // Start exploration of the neighbors of the current node acording the motion model
       for(int i = 0; i < num_mov; ++i) {
         node_t node = { current.x + (int) motion[i][0],
                           current.y + (int) motion[i][1],
@@ -355,9 +347,9 @@ int32_t main(int32_t argc, char **argv) {
           unvisited.insert(std::pair<int, node_t> (n_id, node)); // Discover a new node in the next iteration
         } else if (unvisited[n_id].cost >= node.cost) { // if the node is in the unvisited list, check if the cost of the node been evaluate is smaller than 
             //This path is the best until now. record it!
-            std::cout << unvisited[n_id].cost << ">=" << node.cost << std::endl;
+            std::cout << unvisited[n_id].cost << ">=" << node.cost << ", n_id:" << n_id << std::endl;
             unvisited.erase(n_id);
-            unvisited.insert(std::pair<int, node_t> (n_id, node)); 
+            unvisited.insert(std::pair<int, node_t> (n_id, node));
         }
       }
     }
